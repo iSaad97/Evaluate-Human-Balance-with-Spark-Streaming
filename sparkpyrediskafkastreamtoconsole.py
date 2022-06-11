@@ -39,17 +39,17 @@ stediCustomerMessageSchema = StructType(
     ]
 )
 # TO-DO: create a spark application object
-spark = SparkSession.builder.appName('Evaluate-Human-Balance')
+spark = SparkSession.builder.appName('Evaluate-Human-Balance').getOrCreate()
 
 # TO-DO: set the spark log level to WARN
-spark.SparkContext.setLogLevel('WARN')
+spark.sparkContext.setLogLevel('WARN')
 
 # TO-DO: using the spark application object, read a streaming dataframe from the Kafka topic redis-server as the source
 # Be sure to specify the option that reads all the events from the topic including those that were published before you started the spark stream
 redisServerRawStreamingDF = spark \
     .readStream \
     .format("kafka") \
-    .option("kafka.bootstrap.servers", "localhost:9092") \
+    .option("kafka.bootstrap.servers", "kafka:19092") \
     .option("subscribe", "redis-server") \
     .option("startingOffsets", "earliest") \
     .load()

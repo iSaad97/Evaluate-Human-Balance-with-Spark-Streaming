@@ -44,19 +44,19 @@ stediCustomerMessageSchema = StructType(
     ]
 )
 # TO-DO: create a spark application object
-spark = SparkSession.builder.appName('Evaluate-Human-Balance')
+spark = SparkSession.builder.appName('Evaluate-Human-Balance').getOrCreate()
 
 # TO-DO: set the spark log level to WARN
-spark.SparkContext.setLogLevel('WARN')
+spark.sparkContext.setLogLevel('WARN')
 
 # TO-DO: using the spark application object, read a streaming dataframe from the Kafka topic redis-server as the source
 # Be sure to specify the option that reads all the events from the topic including those that were published before you started the spark stream
 
-redisServerRawStreamingDF = spark                          \
-    .readStream                                          \
-    .format("kafka")                                     \
-    .option("kafka.bootstrap.servers", "localhost:9092") \
-    .option("subscribe","redis-server")                  \
+redisServerRawStreamingDF = spark\
+    .readStream\
+    .format("kafka")\
+    .option("kafka.bootstrap.servers", "kafka:19092") \
+    .option("subscribe","redis-server")\
     .option("startingOffsets","earliest")\
     .load()
 
@@ -87,7 +87,7 @@ redisServerStreamingDF = redisServerRawStreamingDF.selectExpr("cast(key as strin
 # (Note: The Redis Source for Kafka has redundant fields zSetEntries and zsetentries, only one should be parsed)
 redisServerStreamingDF\
     .withColumn('value',from_json('value',redisMessageSchema))\
-    .selet(col('value.*'))\
+    .select(col('value.*'))\
     .createOrReplaceTempView('RedisData')
 
 
@@ -148,13 +148,15 @@ emailAndBirthYearStreamingDF = emailAndBirthDayStreamingDF\
 stediRawStreamingDF = spark\
     .readStream\
     .format("kafka")\
-    .option("kafka.bootstrap.servers", "localhost:9092")\
+    .option("kafka.bootstrap.servers", "kafka:19092")\
     .option("subscribe", "stedi-events")\
     .option("startingOffsets", "earliest")\
     .load()
 
-# TO-DO: cast the value column in the streaming dataframe as a STRING 
+# TO-DO: cast the value column in the streaming dataframe as a STRING
 
+stediRawStreamingDF  = stediRawStreamingDF\
+    .selectExpr("cast(key as string) key", "cast(value as string) value")
 # TO-DO: parse the JSON from the single column "value" with a json object in it, like this:
 # +------------+
 # | value      |
@@ -171,7 +173,7 @@ stediRawStreamingDF = spark\
 #
 # storing them in a temporary view called CustomerRisk
 stediRawStreamingDF\
-    .withColumn('value', from_json('value', stediCustomerMessageSchema))\
+    .withColumn('value', from_json("value", stediCustomerMessageSchema))\
     .select(col('value.*')) \
     .createOrReplaceTempView('CustomerRisk')
 # TO-DO: execute a sql statement against a temporary view, selecting the customer and the score from the temporary view, creating a dataframe called customerRiskStreamingDF
@@ -195,10 +197,10 @@ customerRiskStreamingDF = emailAndBirthYearStreamingDF\
 # In this JSON Format {"customer":"Santosh.Fibonnaci@test.com","score":"28.5","email":"Santosh.Fibonnaci@test.com","birthYear":"1963"}
 
 # customerRiskStreamingDF.writeStream.outputMode("append").format("console").start().awaitTermination()
-customerRiskStreamingDF.selectExpr("CAST(customer AS STRING) AS key", "to_json(struct(*)) AS value")\
+customerRiskStreamingDF.selectExpr("to_json(struct(*)) AS value")\
     .writeStream \
     .format("kafka") \
-    .option("kafka.bootstrap.servers", "localhost:9092")\
+    .option("kafka.bootstrap.servers", "kafka:19092")\
     .option("topic", "customer-risk")\
     .option("checkpointLocation","/tmp/kafkacheckpoint")\
     .start()\
