@@ -1,0 +1,1 @@
+docker logs spark > spark/logs/spark-master.log 2>&1

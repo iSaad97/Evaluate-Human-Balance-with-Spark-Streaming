@@ -26,8 +26,7 @@ stediRawStreamingDF = spark.readStream\
 
 # TO-DO: cast the value column in the streaming dataframe as a STRING 
 stediStreamingDF = stediRawStreamingDF\
-    .selectExpr('cast(key as string) key", "cast(value as string) value')
-
+    .selectExpr("cast(key as string) key", "cast(value as string) value")
 
 # TO-DO: parse the JSON from the single column "value" with a json object in it, like this:
 # +------------+
@@ -46,12 +45,12 @@ stediStreamingDF = stediRawStreamingDF\
 # storing them in a temporary view called CustomerRisk
 stediStreamingDF\
     .withColumn('value',from_json('value',stediCustomerMessageSchema))\
-    .selet(col('value.*'))\
+    .select(col('value.*'))\
     .createOrReplaceTempView('CustomerRisk')
 
 # TO-DO: execute a sql statement against a temporary view, selecting the customer and the score from the temporary
 # view, creating a dataframe called customerRiskStreamingDF
-customerRiskStreamingDF = stediStreamingDF.sql('select customer,score from CustomerRisk')
+customerRiskStreamingDF = spark.sql('select customer,score from CustomerRisk')
 
 
 # TO-DO: sink the customerRiskStreamingDF dataframe to the console in append mode
