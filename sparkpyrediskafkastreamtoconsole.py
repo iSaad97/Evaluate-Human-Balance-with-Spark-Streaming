@@ -81,7 +81,7 @@ redisServerStreamingDF = redisServerRawStreamingDF.selectExpr("cast(key as strin
 # (Note: The Redis Source for Kafka has redundant fields zSetEntries and zsetentries, only one should be parsed)
 redisServerStreamingDF \
     .withColumn('value', from_json('value', redisMessageSchema)) \
-    .selet(col('value.*')) \
+    .select(col('value.*')) \
     .createOrReplaceTempView('RedisData')
 
 # and create separated fields like this:
